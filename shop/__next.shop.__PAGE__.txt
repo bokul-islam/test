@@ -1,0 +1,6 @@
+1:"$Sreact.fragment"
+2:"$Sreact.suspense"
+3:I[28165,["/test/_next/static/chunks/118j2-zo6tlt0.js","/test/_next/static/chunks/0_wsjbaw4e_~4.js","/test/_next/static/chunks/0d3shmwh5_nmn.js","/test/_next/static/chunks/0v3.vqflgt87j.js","/test/_next/static/chunks/0lpyxxo5syo15.js","/test/_next/static/chunks/03ij1-y~~35vh.js"],"ShopView"]
+4:I[97367,["/test/_next/static/chunks/118j2-zo6tlt0.js","/test/_next/static/chunks/0_wsjbaw4e_~4.js","/test/_next/static/chunks/0d3shmwh5_nmn.js","/test/_next/static/chunks/0v3.vqflgt87j.js","/test/_next/static/chunks/0lpyxxo5syo15.js"],"OutletBoundary"]
+0:{"rsc":["$","$1","c",{"children":[["$","$2",null,{"fallback":["$","div",null,{"className":"mx-auto max-w-7xl px-4 py-24 text-center text-sm text-forest-500","children":"Loading the vault…"}],"children":["$","$L3",null,{}]}],[["$","script","script-0",{"src":"/test/_next/static/chunks/03ij1-y~~35vh.js","async":true}]],["$","$L4",null,{"children":["$","$2",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"UasPZp0iDrbsML7XCSXjb"}
+5:null
