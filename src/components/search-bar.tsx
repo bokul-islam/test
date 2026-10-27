@@ -9,6 +9,7 @@ import { Loader2, Search, TrendingUp } from "lucide-react";
 import type { ProductDTO } from "@/db/schema";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { filterCatalog } from "@/lib/catalog-query";
 
 const TRENDING = ["Rolex", "Diver", "Smart", "Gold", "Chronograph"];
 
@@ -35,17 +36,10 @@ export function SearchBar({ className }: { className?: string }) {
       return;
     }
     setLoading(true);
-    const t = window.setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/products?q=${encodeURIComponent(q)}&limit=6`);
-        const data = await res.json();
-        setResults(data.items ?? []);
-      } catch {
-        setResults([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 240);
+    const t = window.setTimeout(() => {
+      setResults(filterCatalog({ q, limit: 6 }));
+      setLoading(false);
+    }, 180);
     return () => window.clearTimeout(t);
   }, [q]);
 

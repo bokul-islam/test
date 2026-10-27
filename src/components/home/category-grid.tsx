@@ -1,13 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
-import { getCategoryCounts } from "@/lib/products";
 import { CATEGORY_META } from "@/lib/constants";
 import { SectionHeading } from "@/components/section-heading";
 import { Reveal } from "@/components/reveal";
+import { catalogCategoryCounts } from "@/lib/catalog-query";
 
-export async function CategoryGrid() {
-  const counts = await getCategoryCounts();
+export function CategoryGrid() {
+  const counts = catalogCategoryCounts();
   const entries = Object.entries(CATEGORY_META);
 
   return (

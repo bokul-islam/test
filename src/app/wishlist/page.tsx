@@ -1,29 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Heart, ArrowRight } from "lucide-react";
 import { useWishlist } from "@/components/wishlist-provider";
 import { ProductCard } from "@/components/product-card";
-import type { ProductDTO } from "@/db/schema";
+import { CATALOG } from "@/data/catalog";
 
 export default function WishlistPage() {
   const { ids } = useWishlist();
-  const [items, setItems] = useState<ProductDTO[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!ids.length) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    fetch(`/api/products?ids=${ids.join(",")}&limit=50`)
-      .then((r) => r.json())
-      .then((data) => setItems(data.items ?? []))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
+  const items = useMemo(() => {
+    const set = new Set(ids);
+    return CATALOG.filter((p) => set.has(p.id));
   }, [ids]);
 
   return (
@@ -38,7 +26,7 @@ export default function WishlistPage() {
         </p>
       </header>
 
-      {!loading && items.length === 0 ? (
+      {items.length === 0 ? (
         <div className="flex flex-col items-center rounded-2xl border border-dashed border-forest-900/20 bg-white/60 px-6 py-24 text-center">
           <Heart className="h-10 w-10 text-forest-300" />
           <p className="mt-4 font-display text-xl text-forest-900">Nothing saved yet</p>

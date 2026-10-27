@@ -1,7 +1,3 @@
-import { asc } from "drizzle-orm";
-import { db } from "@/db";
-import { testimonials as testimonialsTable } from "@/db/schema";
-import { getBestSellers, getLatestArrivals } from "@/lib/products";
 import { Hero } from "@/components/home/hero";
 import { CategoryGrid } from "@/components/home/category-grid";
 import { PromoBanners } from "@/components/home/promo-banners";
@@ -13,15 +9,13 @@ import { Testimonials } from "@/components/home/testimonials";
 import { Newsletter } from "@/components/home/newsletter";
 import { ProductCard } from "@/components/product-card";
 import { SectionHeading } from "@/components/section-heading";
+import { catalogBestSellers, catalogLatest } from "@/lib/catalog-query";
+import { TESTIMONIALS } from "@/data/catalog";
 
-export const dynamic = "force-dynamic";
-
-export default async function HomePage() {
-  const [bestSellers, latest, quotes] = await Promise.all([
-    getBestSellers(5),
-    getLatestArrivals(4),
-    db.select().from(testimonialsTable).orderBy(asc(testimonialsTable.id)),
-  ]);
+export default function HomePage() {
+  const bestSellers = catalogBestSellers(5);
+  const latest = catalogLatest(4);
+  const quotes = TESTIMONIALS.map((t, i) => ({ id: i + 1, ...t }));
 
   return (
     <>
@@ -29,7 +23,6 @@ export default async function HomePage() {
       <CategoryGrid />
       <PromoBanners />
 
-      {/* Best sellers */}
       <section className="mx-auto max-w-7xl px-4 py-16 lg:px-6 lg:py-20">
         <SectionHeading
           subtitle="Most Loved Watches"
@@ -48,7 +41,6 @@ export default async function HomePage() {
       <FeaturedCollections />
       <OfferBanner />
 
-      {/* Latest arrivals */}
       <section className="mx-auto max-w-7xl px-4 py-16 lg:px-6 lg:py-20">
         <SectionHeading
           subtitle="Fresh In The Vault"

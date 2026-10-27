@@ -11,6 +11,8 @@ import {
 } from "react";
 import type { CartLine, CartResponse } from "@/lib/cart-types";
 import { useToast } from "@/components/toast";
+import { isStaticExport } from "@/lib/static-mode";
+import { catalogById } from "@/lib/catalog-query";
 
 type CartContextValue = {
   lines: CartLine[];
@@ -27,6 +29,7 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
+const STORAGE_KEY = "ws_cart_static_v1";
 
 export function useCart() {
   const ctx = useContext(CartContext);
@@ -34,11 +37,37 @@ export function useCart() {
   return ctx;
 }
 
+function totals(lines: CartLine[]): Pick<CartResponse, "count" | "subtotalCents"> {
+  return {
+    count: lines.reduce((n, i) => n + i.quantity, 0),
+    subtotalCents: lines.reduce((n, i) => n + i.product.priceCents * i.quantity, 0),
+  };
+}
+
 function applyCart(
   data: CartResponse,
   set: (lines: CartLine[], count: number, subtotal: number) => void,
 ) {
   set(data.items, data.count, data.subtotalCents);
+}
+
+function readLocal(): CartLine[] {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as CartLine[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocal(lines: CartLine[]) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
+  } catch {
+    /* ignore quota */
+  }
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -56,8 +85,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setSubtotalCents(s);
   }, []);
 
+  const setLocalLines = useCallback(
+    (next: CartLine[]) => {
+      writeLocal(next);
+      const t = totals(next);
+      setAll(next, t.count, t.subtotalCents);
+    },
+    [setAll],
+  );
+
   useEffect(() => {
     let cancelled = false;
+    if (isStaticExport) {
+      const local = readLocal();
+      const t = totals(local);
+      if (!cancelled) {
+        setAll(local, t.count, t.subtotalCents);
+        setReady(true);
+      }
+      return () => {
+        cancelled = true;
+      };
+    }
+
     fetch("/api/cart")
       .then((r) => r.json())
       .then((data: CartResponse) => {
@@ -76,6 +126,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
     async (productId: number, quantity = 1) => {
       setBusy(true);
       try {
+        if (isStaticExport) {
+          const product = catalogById(productId);
+          if (!product) {
+            toast("This piece is no longer available");
+            return;
+          }
+          const qty = Math.max(1, Math.min(10, quantity));
+          const current = readLocal();
+          const existing = current.find((l) => l.product.id === productId);
+          let next: CartLine[];
+          if (existing) {
+            next = current.map((l) =>
+              l.product.id === productId
+                ? { ...l, quantity: Math.min(product.stock, l.quantity + qty) }
+                : l,
+            );
+          } else {
+            next = [
+              ...current,
+              {
+                id: productId,
+                quantity: Math.min(product.stock, qty),
+                product: {
+                  id: product.id,
+                  slug: product.slug,
+                  name: product.name,
+                  brand: product.brand,
+                  priceCents: product.priceCents,
+                  originalPriceCents: product.originalPriceCents,
+                  image: product.image,
+                  imageAlt: product.imageAlt,
+                  stock: product.stock,
+                },
+              },
+            ];
+          }
+          setLocalLines(next);
+          setOpen(true);
+          return;
+        }
+
         const res = await fetch("/api/cart", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -93,11 +184,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setBusy(false);
       }
     },
-    [setAll, toast],
+    [setAll, setLocalLines, toast],
   );
 
   const update = useCallback(
     async (lineId: number, quantity: number) => {
+      if (isStaticExport) {
+        const current = readLocal();
+        const next =
+          quantity <= 0
+            ? current.filter((l) => l.id !== lineId)
+            : current.map((l) =>
+                l.id === lineId
+                  ? { ...l, quantity: Math.max(1, Math.min(10, Math.min(l.product.stock, quantity))) }
+                  : l,
+              );
+        setLocalLines(next);
+        return;
+      }
       try {
         const res = await fetch(`/api/cart/${lineId}`, {
           method: "PATCH",
@@ -112,11 +216,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         /* noop */
       }
     },
-    [setAll],
+    [setAll, setLocalLines],
   );
 
   const remove = useCallback(
     async (lineId: number) => {
+      if (isStaticExport) {
+        setLocalLines(readLocal().filter((l) => l.id !== lineId));
+        return;
+      }
       try {
         const res = await fetch(`/api/cart/${lineId}`, { method: "DELETE" });
         if (res.ok) {
@@ -127,10 +235,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         /* noop */
       }
     },
-    [setAll],
+    [setAll, setLocalLines],
   );
 
   const reset = useCallback(() => {
+    if (isStaticExport) writeLocal([]);
     setAll([], 0, 0);
   }, [setAll]);
 

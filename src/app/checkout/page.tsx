@@ -16,6 +16,7 @@ import {
 import { useCart } from "@/components/cart/cart-provider";
 import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { isStaticExport } from "@/lib/static-mode";
 
 const inputCls =
   "w-full rounded-xl border border-forest-900/15 bg-white px-4 py-3 text-sm text-forest-950 placeholder:text-forest-400 transition focus:border-gold-500 focus:outline-none";
@@ -52,19 +53,52 @@ export default function CheckoutPage() {
       paymentMethod: payment,
     };
     try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Checkout failed — please try again.");
-        setLoading(false);
-        return;
+      const snapshot = {
+        email: String(payload.email ?? ""),
+        firstName: String(payload.firstName ?? ""),
+        lastName: String(payload.lastName ?? ""),
+        address: String(payload.address ?? ""),
+        city: String(payload.city ?? ""),
+        postalCode: String(payload.postalCode ?? ""),
+        country: String(payload.country ?? ""),
+        paymentMethod: payment,
+        subtotalCents,
+        shippingCents,
+        totalCents: total,
+        items: lines.map((l) => ({
+          id: l.id,
+          quantity: l.quantity,
+          name: l.product.name,
+          brand: l.product.brand,
+          priceCents: l.product.priceCents,
+          image: l.product.image,
+        })),
+      };
+
+      let orderNumber = `WS-${Date.now().toString(36).toUpperCase()}`;
+
+      if (!isStaticExport) {
+        const res = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? "Checkout failed — please try again.");
+          setLoading(false);
+          return;
+        }
+        orderNumber = data.orderNumber ?? orderNumber;
+      }
+
+      try {
+        sessionStorage.setItem("ws_last_order", JSON.stringify({ orderNumber, ...snapshot }));
+      } catch {
+        /* ignore */
       }
       reset();
-      router.push(`/order/${data.orderNumber}`);
+      router.push(`/order/confirmation?n=${encodeURIComponent(orderNumber)}`);
     } catch {
       setError("Network error — please try again.");
       setLoading(false);

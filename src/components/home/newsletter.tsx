@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState, type FormEvent } from "react";
 import { CheckCircle2, Loader2, Mail, Send } from "lucide-react";
 import { Reveal } from "@/components/reveal";
+import { isStaticExport } from "@/lib/static-mode";
 
 const img =
   "https://images.pexels.com/photos/38946831/pexels-photo-38946831.jpeg?auto=compress&cs=tinysrgb&fit=crop&h=560&w=1400";
@@ -17,6 +18,12 @@ export function Newsletter() {
     e.preventDefault();
     setState("loading");
     try {
+      if (isStaticExport) {
+        await new Promise((r) => setTimeout(r, 400));
+        setState("done");
+        setMessage("Welcome to the inner circle.");
+        return;
+      }
       const res = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

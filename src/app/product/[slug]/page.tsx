@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react";
-import { getProductBySlug, getRelatedProducts } from "@/lib/products";
+import { catalogBySlug, catalogRelated } from "@/lib/catalog-query";
+import { CATALOG } from "@/data/catalog";
 import { discountPercent, formatMoney } from "@/lib/format";
 import { CATEGORY_META, COLLECTION_META } from "@/lib/constants";
 import { RatingStars } from "@/components/rating-stars";
@@ -19,13 +20,15 @@ import { ProductCard } from "@/components/product-card";
 import { SectionHeading } from "@/components/section-heading";
 import { cn } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
-
 type Params = Promise<{ slug: string }>;
+
+export function generateStaticParams() {
+  return CATALOG.map((p) => ({ slug: p.slug }));
+}
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const product = catalogBySlug(slug);
   if (!product) return { title: "Watch not found" };
   return {
     title: `${product.brand} ${product.name}`,
@@ -35,10 +38,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 export default async function ProductPage({ params }: { params: Params }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const product = catalogBySlug(slug);
   if (!product) notFound();
 
-  const related = await getRelatedProducts(product);
+  const related = catalogRelated(product);
   const discount = discountPercent(product.priceCents, product.originalPriceCents);
   const categoryLabel = CATEGORY_META[product.category]?.label ?? product.category;
   const collectionLabel = COLLECTION_META[product.collection]?.label ?? product.collection;

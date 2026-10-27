@@ -2,23 +2,13 @@ import "server-only";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { products, type Product, type ProductDTO } from "@/db/schema";
+import type { ProductQuery } from "@/lib/product-query";
+
+export type { ProductQuery };
 
 export function toDTO(p: Product): ProductDTO {
   return { ...p, rating: Number(p.rating) };
 }
-
-export type ProductQuery = {
-  q?: string;
-  category?: string;
-  collection?: string;
-  brand?: string;
-  deals?: boolean;
-  min?: number; // cents
-  max?: number; // cents
-  sort?: "featured" | "newest" | "price-asc" | "price-desc" | "rating";
-  ids?: number[];
-  limit?: number;
-};
 
 export async function listProducts(query: ProductQuery = {}): Promise<ProductDTO[]> {
   const conditions = [];
