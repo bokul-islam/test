@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+
+# logs & debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+.pnpm-debug.log*
+
+# typescript
+next-env.d.ts
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# drizzle / misc
+drizzle/
+
+# tmp
+/tmp
